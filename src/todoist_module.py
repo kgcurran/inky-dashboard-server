@@ -1,7 +1,7 @@
 import calendar_settings
 from todoist_api_python.api import TodoistAPI
 from todoist_api_python.models import Task
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 
 api = TodoistAPI(calendar_settings.todoist_api_key)
 
@@ -14,14 +14,11 @@ def get_subtext(current: datetime, task: Task):
     if task.due is None:
         return "No Due Date"
 
-    if task.due.datetime:
-        try:
-            # Attempt to parse as ISO 8601 with timezone info
-            dt = datetime.fromisoformat(task.due.datetime.replace("Z", "+00:00"))
-        except ValueError:
-            raise ValueError("Invalid datetime format")
+    raw = task.due.date
+    if isinstance(raw, datetime):
+        dt = raw if raw.tzinfo else raw.replace(tzinfo=calendar_settings.timezone)
     else:
-        dt = datetime.strptime(task.due.date, "%Y-%m-%d").replace(tzinfo=calendar_settings.timezone)
+        dt = datetime.combine(raw, time.min, tzinfo=calendar_settings.timezone)
 
     dt = dt.astimezone(calendar_settings.timezone)
     current = current.astimezone(calendar_settings.timezone)
@@ -39,14 +36,15 @@ def get_subtext(current: datetime, task: Task):
         return f"{month_day} · {day_of_week}"
 
 def get_todo_items(current: datetime, limit: int = 7):
-    tasks = api.get_tasks()
-    
     items = []
 
-    for task in tasks[:limit]:
-        items.append(TodoItem(
-            task.content,
-            get_subtext(current, task)
-        ))
+    for page in api.get_tasks():
+        for task in page:
+            items.append(TodoItem(
+                task.content,
+                get_subtext(current, task)
+            ))
+            if len(items) >= limit:
+                return items
 
     return items

@@ -1,0 +1,165 @@
+.calendar-wrap {
+  container: Calendar / inline-size;
+}
+.calendar {
+  --dayHeaderHeight: 75px;
+  --hourHeight: 50px;
+
+  display: flex;
+
+  .hours {
+    > ol > li:first-of-type {
+      margin-block-start: var(--dayHeaderHeight);
+    }
+    > ol > li {
+      block-size: var(--hourHeight);
+    }
+    white-space: nowrap;
+    border-inline-end: 1px solid var(--gray);
+    .day-time {
+      padding-block: 0.25rem;
+      padding-inline-end: 0.5rem;
+      border-block-start: 1px solid var(--gray);
+
+    }
+  }
+
+  .days {
+    width: 100%;
+  }
+
+  .day-number {
+    font-weight: 300;
+    font-size: 2rem;
+  }
+  .day-name {
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .events {
+    display: flex;
+    width: 100%;
+    .day-of-events {
+      flex: 1;
+      padding-inline: 0.75rem;
+      display: grid;
+      grid-template-rows: var(--dayHeaderHeight) repeat(9, var(--hourHeight));
+      grid-template-columns: 1fr;
+      border-inline-end: 1px solid var(--gray);
+
+      & dt {
+        grid-row: 1;
+      }
+    }
+    .event {
+      --gray: #555;
+
+      grid-row: var(--row) / span var(--span, 1);
+      border: 1px solid var(--gray);
+      border-radius: 3px;
+      padding: 0.5rem;
+    }
+    & time {
+      font-weight: 600;
+      margin-block-end: 0.15rem;
+    }
+    .event-title {
+      opacity: 0.6;
+    }
+  }
+
+  @container Calendar (max-width: 690px) {
+    & {
+      display: block;
+    }
+    .hours {
+      display: none;
+    }
+    .events {
+      display: block;
+
+      .day-of-events {
+        border: 0;
+        grid-template-columns: 75px 1fr;
+        grid-template-rows: auto;
+        gap: 0.75rem;
+        margin-block-end: 2rem;
+        .event {
+          grid-column: 2;
+          grid-row: auto;
+        }
+      }
+    }
+  }
+
+  @container Calendar (max-width: 350px) {
+    .events {
+      .day-of-events {
+        display: block;
+        .event {
+          margin-block-end: 0.25rem;
+        }
+        & dt {
+          display: flex;
+          margin-block-end: 0.25rem;
+
+          .day-number {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-inline-end: 0.25rem;
+          }
+          .day-name {
+            font-size: 1.2rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+.info-panel {
+  padding: 1rem 2rem;
+  container: InfoPanel / inline-size;
+
+  & h1 {
+    font-size: max(7cqi, 24px);
+  }
+}
+
+split-panel {
+  background: white;
+  padding: 1rem 0.5rem;
+}
+
+@layer reset {
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    --gray: #ccc;
+
+    font-family: system-ui;
+    font-size: 85%;
+    line-height: 1.4;
+    background: #666;
+  }
+  body {
+    height: 100dvh;
+    margin: 0;
+    padding: 1rem;
+  }
+  ol,
+  ul,
+  dl {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  dd {
+    margin: 0;
+  }
+  h1 {
+    line-height: 1.1;
+  }
+}

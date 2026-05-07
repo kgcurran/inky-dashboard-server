@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Inky Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    {% set first_hour = (time_range[0] / 100) | int %}
+    {% set last_hour = (time_range[-1] / 100) | int %}
+    {% set total_hours = last_hour - first_hour %}
+
+    <div class="dashboard">
+        <aside class="panel-left">
+            <header class="task-header">
+                <div class="task-header-day">{{ header.d }}</div>
+                <div class="task-header-meta">
+                    <div class="task-header-dow">{{ header.w }}</div>
+                    <div class="task-header-monthyear">{{ header.s }}</div>
+                </div>
+            </header>
+            <ul class="task-list">
+                {% for task in tasks %}
+                <li class="task">
+                    <div class="task-title">{{ task.txt }}</div>
+                    <div class="task-sub">{{ task.sub }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </aside>
+
+        <section class="panel-right">
+            <div class="cal-day-headers">
+                <div class="cal-corner"></div>
+                {% for cal_day in calendar.dh %}
+                <div class="cal-day-header">{{ cal_day }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="cal-grid" style="--total-hours: {{ total_hours }};">
+                <div class="cal-hours">
+                    {% for time in time_range %}
+                        {% set hour = (time / 100) | int %}
+                        <div class="cal-hour" style="--hour-offset: {{ hour - first_hour }};">{{ hour }}</div>
+                    {% endfor %}
+                </div>
+
+                {% for cal_day in calendar.dh %}
+                {% set day_index = loop.index0 %}
+                <div class="cal-day">
+                    {% for time in time_range %}
+                        {% set hour = (time / 100) | int %}
+                        <div class="cal-hour-line" style="--hour-offset: {{ hour - first_hour }};"></div>
+                    {% endfor %}
+
+                    {% for event in calendar.ev %}
+                        {% if event.sd == day_index %}
+                            {% set start_h = (event.st / 100) | int %}
+                            {% set start_m = event.st % 100 %}
+                            {% set end_h = (event.et / 100) | int %}
+                            {% set end_m = event.et % 100 %}
+                            {% set offset_min = (start_h - first_hour) * 60 + start_m %}
+                            {% set duration_min = (end_h - start_h) * 60 + (end_m - start_m) %}
+                            <div class="event c{{ event.co }}"
+                                 style="--offset-min: {{ offset_min }}; --duration-min: {{ duration_min }}; --lane: {{ event.lane }}; --lanes: {{ event.lanes }};">
+                                <div class="event-title">{{ event.txt }}</div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</body>
+
+</html>
