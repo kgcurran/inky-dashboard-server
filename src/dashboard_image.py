@@ -31,9 +31,10 @@ def quantize_to_inky(img):
 W, H = 800, 480
 LEFT_W = 300
 HEADER_H = 96
-HOUR_PX = 34
+HOUR_PX = 32
 HOUR_COL_W = 36
 DAY_HEADER_H = 26
+ALLDAY_ROW_H = 14
 FRAME_BORDER = 2
 
 BLACK = (0, 0, 0)
@@ -184,24 +185,58 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
         return
     first_hour = time_range[0] // 100
 
+    allday_counts = [0] * n_days
+    for ev in calendar.get("ev", []):
+        if not ev.get("ad"):
+            continue
+        sd = ev.get("sd", 0)
+        ed = ev.get("ed", sd + 1)
+        for day_index in range(max(sd, 0), min(ed, n_days)):
+            allday_counts[day_index] += 1
+    max_allday = max(allday_counts) if allday_counts else 0
+    allday_h = max_allday * ALLDAY_ROW_H + (2 if max_allday else 0)
+
+    grid_y = body_y + allday_h
+
+    rendered = [0] * n_days
+    for ev in calendar.get("ev", []):
+        if not ev.get("ad"):
+            continue
+        sd = ev.get("sd", 0)
+        ed = ev.get("ed", sd + 1)
+        for day_index in range(max(sd, 0), min(ed, n_days)):
+            row = rendered[day_index]
+            col_x0 = body_x + day_w * day_index
+            ex0 = col_x0 + 1
+            ex1 = col_x0 + day_w - 1
+            ey0 = body_y + 1 + row * ALLDAY_ROW_H
+            ey1 = ey0 + ALLDAY_ROW_H - 1
+            color = EVENT_COLORS.get(ev.get("co", 0), (100, 100, 100))
+            text_color = DARK if ev.get("co") in LIGHT_EVENT_COLORS else WHITE
+            d.rectangle([(ex0, ey0), (ex1, ey1)], fill=color)
+            title = _truncate(d, ev.get("txt", ""), f_event, ex1 - ex0 - 8)
+            d.text((ex0 + 4, ey0 + 1), title, font=f_event, fill=text_color)
+            rendered[day_index] = row + 1
+
     for time in time_range:
         hour = time // 100
-        y_h = body_y + (hour - first_hour) * HOUR_PX
+        y_h = grid_y + (hour - first_hour) * HOUR_PX
         if y_h > body_y_end:
             break
         d.line([(body_x, y_h), (body_x_end, y_h)], fill=GRID, width=1)
         label = str(hour)
         bbox = d.textbbox((0, 0), label, font=f_hour)
         tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
         d.text(
-            (body_x - 5 - tw, y_h - th / 2 - 1),
+            (body_x - 5 - tw, y_h + 1),
             label,
             font=f_hour,
             fill=HOUR_TEXT,
         )
 
     for ev in calendar.get("ev", []):
+        if ev.get("ad"):
+            continue
         sd = ev.get("sd", 0)
         if sd < 0 or sd >= n_days:
             continue
@@ -212,11 +247,11 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
         if duration_min <= 0:
             continue
 
-        y0 = body_y + offset_min * HOUR_PX / 60
+        y0 = grid_y + offset_min * HOUR_PX / 60
         y1 = y0 + duration_min * HOUR_PX / 60
-        if y1 <= body_y or y0 >= body_y_end:
+        if y1 <= grid_y or y0 >= body_y_end:
             continue
-        y0 = max(y0, body_y + 1)
+        y0 = max(y0, grid_y + 1)
         y1 = min(y1, body_y_end - 1)
 
         col_x0 = body_x + day_w * sd

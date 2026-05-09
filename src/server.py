@@ -88,14 +88,23 @@ def build_dashboard_data():
             "ed": event.end_day,
             "et": event.end_time,
             "txt": event.text,
+            "ad": event.all_day,
             "lane": 0,
             "lanes": 1,
         })
-    assign_event_lanes(event_payload)
+    assign_event_lanes([ev for ev in event_payload if not ev["ad"]])
+
+    allday_counts = [0] * calendar_days
+    for ev in event_payload:
+        if ev["ad"]:
+            for day_index in range(max(ev["sd"], 0), min(ev["ed"], calendar_days)):
+                allday_counts[day_index] += 1
+    max_allday = max(allday_counts) if allday_counts else 0
 
     calendar_payload = {
         "dh": get_date_strings(now, calendar_days),
         "ev": event_payload,
+        "max_allday": max_allday,
     }
 
     tasks_payload = [

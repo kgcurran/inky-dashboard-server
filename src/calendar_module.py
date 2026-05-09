@@ -10,8 +10,7 @@ utc_tz = ZoneInfo("UTC")
 
 
 class CalendarEvent:
-    # def __init__(self, color, start_day, start_time, end_day, end_time, text):
-    def __init__(self, color, start_day, start_time, end_day, end_time, duration_minutes, text):
+    def __init__(self, color, start_day, start_time, end_day, end_time, duration_minutes, text, all_day=False):
         self.color = color
         self.start_day = start_day
         self.start_time = start_time
@@ -19,6 +18,7 @@ class CalendarEvent:
         self.end_time = end_time
         self.duration_minutes = duration_minutes
         self.text = text
+        self.all_day = all_day
 
 def get_events_between(cal: Calendar, color: int, start_date: datetime, end_date: datetime, zone: ZoneInfo):
     '''Returns all events that occur between a specific start and end date as a list of CalendarEvent objects'''
@@ -30,6 +30,10 @@ def get_events_between(cal: Calendar, color: int, start_date: datetime, end_date
         date = date.astimezone(zone)
         return ((date - start_date.astimezone(zone)).days, date.hour * 100 + date.minute)
 
+    def get_day_time_all_day(date):
+        d = date.date() if hasattr(date, "date") else date
+        return ((d - start_date.date()).days, 0)
+
     def get_duration_minutes(start: datetime, end: datetime):
         # def get_duration_minutes(start_string, end_string):
         # start = datetime.fromisoformat(start_string)
@@ -37,6 +41,8 @@ def get_events_between(cal: Calendar, color: int, start_date: datetime, end_date
         return round((end - start).total_seconds() // 60)
 
     for event in cal.events:
+        all_day = bool(getattr(event, "all_day", False))
+        get_dt = get_day_time_all_day if all_day else get_day_time
         rrule_found = False
 
         for extra in event.extra:
@@ -66,13 +72,12 @@ def get_events_between(cal: Calendar, color: int, start_date: datetime, end_date
 
                 for occurrence_start in rule.between(start_date.astimezone(timezone.utc), end_date.astimezone(timezone.utc),inc=True):
                     occurrence_end = occurrence_start + (event.end.datetime - event.begin.datetime)
-                    # event_data.append((color, *get_day_time(occurrence_start), *get_day_time(occurrence_end), event.name))
-                    event_data.append((color, *get_day_time(occurrence_start), *get_day_time(occurrence_end), get_duration_minutes(occurrence_start, occurrence_end), event.name))
+                    event_data.append((color, *get_dt(occurrence_start), *get_dt(occurrence_end), get_duration_minutes(occurrence_start, occurrence_end), event.name, all_day))
                 rrule_found = True
                 break
 
         if not rrule_found and event.begin <= end_date and start_date <= event.end:
-            event_data.append((color, *get_day_time(event.begin), *get_day_time(event.end), get_duration_minutes(event.begin, event.end), event.name))
+            event_data.append((color, *get_dt(event.begin), *get_dt(event.end), get_duration_minutes(event.begin, event.end), event.name, all_day))
             # event_data.append((color, *get_day_time(event.begin), *get_day_time(event.end), event.name))
 
     return list(map(lambda edata: CalendarEvent(*edata), event_data))

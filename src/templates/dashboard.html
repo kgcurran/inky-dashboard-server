@@ -11,8 +11,9 @@
     {% set first_hour = (time_range[0] / 100) | int %}
     {% set last_hour = (time_range[-1] / 100) | int %}
     {% set total_hours = last_hour - first_hour %}
+    {% set allday_px = (calendar.max_allday * 14 + 2) if calendar.max_allday else 0 %}
 
-    <div class="dashboard">
+    <div class="dashboard" style="--allday-h: {{ allday_px }}px;">
         <aside class="panel-left">
             <header class="task-header">
                 <div class="task-header-day">{{ header.d }}</div>
@@ -50,13 +51,23 @@
                 {% for cal_day in calendar.dh %}
                 {% set day_index = loop.index0 %}
                 <div class="cal-day">
+                    <div class="cal-allday">
+                        {% for event in calendar.ev %}
+                            {% if event.ad and event.sd <= day_index < event.ed %}
+                                <div class="event allday c{{ event.co }}">
+                                    <div class="event-title">{{ event.txt }}</div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
                     {% for time in time_range %}
                         {% set hour = (time / 100) | int %}
                         <div class="cal-hour-line" style="--hour-offset: {{ hour - first_hour }};"></div>
                     {% endfor %}
 
                     {% for event in calendar.ev %}
-                        {% if event.sd == day_index %}
+                        {% if not event.ad and event.sd == day_index %}
                             {% set start_h = (event.st / 100) | int %}
                             {% set start_m = event.st % 100 %}
                             {% set end_h = (event.et / 100) | int %}
