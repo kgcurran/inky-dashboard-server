@@ -289,7 +289,7 @@ def _draw_calendar(d, calendar, time_range, *, x0, y0, x1, y1,
 W_P, H_P = 480, 800
 DAY_HEADER_H_P = 36
 HOUR_COL_W_P = 40
-ALLDAY_ROW_H_P = 18
+ALLDAY_ROW_H_P = 22
 
 
 def render_portrait(calendar, time_range):
@@ -297,7 +297,7 @@ def render_portrait(calendar, time_range):
     d = ImageDraw.Draw(img)
     f_hd = _load(14, bold=True)
     f_hour = _load(12)
-    f_event = _load(12, bold=True)
+    f_event = _load(18, bold=True)
     _draw_calendar(
         d, calendar, time_range,
         x0=0, y0=0, x1=W_P, y1=H_P,
