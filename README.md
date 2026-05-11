@@ -35,6 +35,7 @@ todoist_api_key = "[insert Todoist API key here]"
 | `GET /dashboard.html` | HTML dashboard (live preview in a browser, 800×480). Also served at `/home`. |
 | `GET /dashboard.png` | 800×480 PNG of the dashboard rendered with Pillow. Returns `ETag` and `Cache-Control: no-cache`. Send `If-None-Match: <etag>` to get a `304 Not Modified` when nothing has changed. |
 | `GET /dashboard.png?palette=inky` | Same image, quantized to the Inky Frame's 7-color palette with Floyd–Steinberg dithering. Smaller file (≈5 KB), ready to blit on-device without further processing. |
+| `GET /calendar.png` | Calendar-only PNG (no task panel) for an Inky Frame mounted in portrait orientation. Rendered as 480×800 then rotated 90° counter-clockwise into an 800×480 buffer so the Pico can blit it without further processing. Same ETag / `If-None-Match` / `?palette=inky` behavior as `/dashboard.png`. |
 | `GET /dashboard.version` | JSON `{"version": "<md5>"}` — a cheap hash of the rendered payload. Pass `?palette=inky` to get the same hash that `/dashboard.png?palette=inky` uses. Useful for clients whose HTTP libraries don't easily handle ETag round-trips. |
 
 The version hash covers the header, task list, calendar payload, and the requested palette, so any change in displayed content produces a new version.

@@ -190,6 +190,36 @@ def dashboard_png():
     return response
 
 
+@app.route("/calendar.png")
+def calendar_png():
+    palette = request.args.get("palette")
+    _, _, calendar_payload = build_dashboard_data()
+    version = _compute_version({}, [], calendar_payload, f"portrait:{palette or ''}")
+    etag = f'"{version}"'
+
+    if request.if_none_match.contains(version):
+        return ("", 304, {"ETag": etag, "Cache-Control": "no-cache"})
+
+    img = dashboard_image.render_portrait(calendar_payload, time_range)
+    img = img.rotate(90, expand=True)
+    if palette == "inky":
+        img = dashboard_image.quantize_to_inky(img)
+
+    buf = BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    buf.seek(0)
+    response = send_file(
+        buf,
+        mimetype="image/png",
+        as_attachment=False,
+        download_name="calendar.png",
+        max_age=0,
+    )
+    response.set_etag(version)
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.route("/dashboard.version")
 def dashboard_version():
     palette = request.args.get("palette")

@@ -144,9 +144,22 @@ def _draw_left(d, header, tasks, f_day, f_dow, f_my, f_task, f_sub):
 
 
 def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
-    rx = LEFT_W
+    _draw_calendar(
+        d, calendar, time_range,
+        x0=LEFT_W, y0=0, x1=W, y1=H,
+        day_header_h=DAY_HEADER_H,
+        hour_col_w=HOUR_COL_W,
+        allday_row_h=ALLDAY_ROW_H,
+        f_hd=f_hd, f_hour=f_hour, f_event=f_event,
+        hour_px=HOUR_PX,
+    )
+
+
+def _draw_calendar(d, calendar, time_range, *, x0, y0, x1, y1,
+                   day_header_h, hour_col_w, allday_row_h,
+                   f_hd, f_hour, f_event, hour_px=None):
     d.rectangle(
-        [(rx, 0), (W - 1, H - 1)],
+        [(x0, y0), (x1 - 1, y1 - 1)],
         outline=FRAME,
         width=FRAME_BORDER,
     )
@@ -154,13 +167,13 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
     days = calendar.get("dh", [])
     n_days = max(len(days), 1)
 
-    body_x = rx + FRAME_BORDER + HOUR_COL_W
-    body_x_end = W - FRAME_BORDER
+    body_x = x0 + FRAME_BORDER + hour_col_w
+    body_x_end = x1 - FRAME_BORDER
     body_w = body_x_end - body_x
     day_w = body_w / n_days
 
-    body_y = FRAME_BORDER + DAY_HEADER_H
-    body_y_end = H - FRAME_BORDER
+    body_y = y0 + FRAME_BORDER + day_header_h
+    body_y_end = y1 - FRAME_BORDER
 
     for i, day in enumerate(days):
         cx = body_x + day_w * (i + 0.5)
@@ -168,18 +181,18 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
         text_w = bbox[2] - bbox[0]
         text_h = bbox[3] - bbox[1]
         d.text(
-            (cx - text_w / 2, FRAME_BORDER + (DAY_HEADER_H - text_h) / 2 - 2),
+            (cx - text_w / 2, y0 + FRAME_BORDER + (day_header_h - text_h) / 2 - 2),
             day,
             font=f_hd,
             fill=DAY_HEADER_TEXT,
         )
 
-    d.line([(rx + FRAME_BORDER, body_y), (body_x_end, body_y)], fill=GRID, width=1)
+    d.line([(x0 + FRAME_BORDER, body_y), (body_x_end, body_y)], fill=GRID, width=1)
     d.line([(body_x, body_y), (body_x, body_y_end)], fill=GRID, width=1)
     for i in range(1, n_days):
-        x = body_x + day_w * i
-        d.line([(x, body_y), (x, body_y_end)], fill=GRID, width=1)
-        d.line([(x, FRAME_BORDER), (x, body_y)], fill=GRID, width=1)
+        x_div = body_x + day_w * i
+        d.line([(x_div, body_y), (x_div, body_y_end)], fill=GRID, width=1)
+        d.line([(x_div, y0 + FRAME_BORDER), (x_div, body_y)], fill=GRID, width=1)
 
     if not time_range:
         return
@@ -194,9 +207,13 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
         for day_index in range(max(sd, 0), min(ed, n_days)):
             allday_counts[day_index] += 1
     max_allday = max(allday_counts) if allday_counts else 0
-    allday_h = max_allday * ALLDAY_ROW_H + (2 if max_allday else 0)
+    allday_h = max_allday * allday_row_h + (2 if max_allday else 0)
 
     grid_y = body_y + allday_h
+
+    if hour_px is None:
+        n_intervals = max(1, len(time_range) - 1)
+        hour_px = (body_y_end - grid_y) / n_intervals
 
     rendered = [0] * n_days
     for ev in calendar.get("ev", []):
@@ -209,8 +226,8 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
             col_x0 = body_x + day_w * day_index
             ex0 = col_x0 + 1
             ex1 = col_x0 + day_w - 1
-            ey0 = body_y + 1 + row * ALLDAY_ROW_H
-            ey1 = ey0 + ALLDAY_ROW_H - 1
+            ey0 = body_y + 1 + row * allday_row_h
+            ey1 = ey0 + allday_row_h - 1
             color = EVENT_COLORS.get(ev.get("co", 0), (100, 100, 100))
             text_color = DARK if ev.get("co") in LIGHT_EVENT_COLORS else WHITE
             d.rectangle([(ex0, ey0), (ex1, ey1)], fill=color)
@@ -220,7 +237,7 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
 
     for time in time_range:
         hour = time // 100
-        y_h = grid_y + (hour - first_hour) * HOUR_PX
+        y_h = grid_y + (hour - first_hour) * hour_px
         if y_h > body_y_end:
             break
         d.line([(body_x, y_h), (body_x_end, y_h)], fill=GRID, width=1)
@@ -247,12 +264,12 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
         if duration_min <= 0:
             continue
 
-        y0 = grid_y + offset_min * HOUR_PX / 60
-        y1 = y0 + duration_min * HOUR_PX / 60
-        if y1 <= grid_y or y0 >= body_y_end:
+        ey0 = grid_y + offset_min * hour_px / 60
+        ey1 = ey0 + duration_min * hour_px / 60
+        if ey1 <= grid_y or ey0 >= body_y_end:
             continue
-        y0 = max(y0, grid_y + 1)
-        y1 = min(y1, body_y_end - 1)
+        ey0 = max(ey0, grid_y + 1)
+        ey1 = min(ey1, body_y_end - 1)
 
         col_x0 = body_x + day_w * sd
         lanes = max(int(ev.get("lanes", 1)), 1)
@@ -263,7 +280,31 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
 
         color = EVENT_COLORS.get(ev.get("co", 0), (100, 100, 100))
         text_color = DARK if ev.get("co") in LIGHT_EVENT_COLORS else WHITE
-        d.rectangle([(ex0, y0), (ex1, y1)], fill=color)
+        d.rectangle([(ex0, ey0), (ex1, ey1)], fill=color)
 
         title = _truncate(d, ev.get("txt", ""), f_event, ex1 - ex0 - 8)
-        d.text((ex0 + 4, y0 + 3), title, font=f_event, fill=text_color)
+        d.text((ex0 + 4, ey0 + 3), title, font=f_event, fill=text_color)
+
+
+W_P, H_P = 480, 800
+DAY_HEADER_H_P = 36
+HOUR_COL_W_P = 40
+ALLDAY_ROW_H_P = 18
+
+
+def render_portrait(calendar, time_range):
+    img = Image.new("RGB", (W_P, H_P), WHITE)
+    d = ImageDraw.Draw(img)
+    f_hd = _load(14, bold=True)
+    f_hour = _load(12)
+    f_event = _load(12, bold=True)
+    _draw_calendar(
+        d, calendar, time_range,
+        x0=0, y0=0, x1=W_P, y1=H_P,
+        day_header_h=DAY_HEADER_H_P,
+        hour_col_w=HOUR_COL_W_P,
+        allday_row_h=ALLDAY_ROW_H_P,
+        f_hd=f_hd, f_hour=f_hour, f_event=f_event,
+        hour_px=None,
+    )
+    return img
