@@ -242,7 +242,7 @@ def _draw_calendar(d, calendar, time_range, *, x0, y0, x1, y1,
         if y_h > body_y_end:
             break
         d.line([(body_x, y_h), (body_x_end, y_h)], fill=GRID, width=1)
-        label = str(hour)
+        label = str(hour % 12 or 12)
         bbox = d.textbbox((0, 0), label, font=f_hour)
         tw = bbox[2] - bbox[0]
         d.text(

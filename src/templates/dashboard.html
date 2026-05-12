@@ -44,7 +44,7 @@
                 <div class="cal-hours">
                     {% for time in time_range %}
                         {% set hour = (time / 100) | int %}
-                        <div class="cal-hour" style="--hour-offset: {{ hour - first_hour }};">{{ hour }}</div>
+                        <div class="cal-hour" style="--hour-offset: {{ hour - first_hour }};">{{ (hour % 12) or 12 }}</div>
                     {% endfor %}
                 </div>
 
