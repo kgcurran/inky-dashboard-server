@@ -34,7 +34,7 @@ HEADER_H = 96
 HOUR_PX = 32
 HOUR_COL_W = 36
 DAY_HEADER_H = 26
-ALLDAY_ROW_H = 14
+ALLDAY_ROW_H = 16
 FRAME_BORDER = 2
 
 BLACK = (0, 0, 0)
@@ -110,7 +110,7 @@ def render(header, tasks, calendar, time_range):
     f_sub = _load(10)
     f_hd = _load(11, bold=True)
     f_hour = _load(10)
-    f_event = _load(10, bold=True)
+    f_event = _load(12, bold=True)
 
     _draw_left(d, header, tasks, f_day, f_dow, f_my, f_task, f_sub)
     _draw_right(d, calendar, time_range, f_hd, f_hour, f_event)
@@ -152,12 +152,13 @@ def _draw_right(d, calendar, time_range, f_hd, f_hour, f_event):
         allday_row_h=ALLDAY_ROW_H,
         f_hd=f_hd, f_hour=f_hour, f_event=f_event,
         hour_px=HOUR_PX,
+        event_top_pad=1,
     )
 
 
 def _draw_calendar(d, calendar, time_range, *, x0, y0, x1, y1,
                    day_header_h, hour_col_w, allday_row_h,
-                   f_hd, f_hour, f_event, hour_px=None):
+                   f_hd, f_hour, f_event, hour_px=None, event_top_pad=3):
     d.rectangle(
         [(x0, y0), (x1 - 1, y1 - 1)],
         outline=FRAME,
@@ -283,7 +284,7 @@ def _draw_calendar(d, calendar, time_range, *, x0, y0, x1, y1,
         d.rectangle([(ex0, ey0), (ex1, ey1)], fill=color)
 
         title = _truncate(d, ev.get("txt", ""), f_event, ex1 - ex0 - 8)
-        d.text((ex0 + 4, ey0 + 3), title, font=f_event, fill=text_color)
+        d.text((ex0 + 4, ey0 + event_top_pad), title, font=f_event, fill=text_color)
 
 
 W_P, H_P = 480, 800
