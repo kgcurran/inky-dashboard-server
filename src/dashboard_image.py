@@ -99,6 +99,55 @@ def _truncate(draw, text, font, max_w):
     return (text + ellipsis) if text else ""
 
 
+def _wrap_text(draw, text, font, max_w):
+    """Word-wrap text into lines that each fit within max_w. Long words break char-by-char."""
+    lines = []
+    current = ""
+    for word in text.split():
+        candidate = f"{current} {word}" if current else word
+        if draw.textlength(candidate, font=font) <= max_w:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+            current = ""
+        if draw.textlength(word, font=font) <= max_w:
+            current = word
+        else:
+            buf = ""
+            for ch in word:
+                if draw.textlength(buf + ch, font=font) <= max_w:
+                    buf += ch
+                else:
+                    if buf:
+                        lines.append(buf)
+                    buf = ch
+            current = buf
+    if current:
+        lines.append(current)
+    return lines
+
+
+def _draw_wrapped(draw, text, font, x, y, max_w, max_h, fill, line_height):
+    """Draw text wrapped to fit max_w × max_h. Ellipsize the last line if more remains."""
+    if not text or max_h <= 0:
+        return
+    if max_h < line_height:
+        draw.text((x, y), _truncate(draw, text, font, max_w), font=font, fill=fill)
+        return
+    lines = _wrap_text(draw, text, font, max_w)
+    max_lines = max(1, int(max_h // line_height))
+    if len(lines) > max_lines:
+        kept = lines[:max_lines]
+        last = kept[-1]
+        while last and draw.textlength(last + "…", font=font) > max_w:
+            last = last[:-1]
+        kept[-1] = (last + "…") if last else "…"
+        lines = kept
+    for i, line in enumerate(lines):
+        draw.text((x, y + i * line_height), line, font=font, fill=fill)
+
+
 def render(header, tasks, calendar, time_range):
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
@@ -283,8 +332,15 @@ def _draw_calendar(d, calendar, time_range, *, x0, y0, x1, y1,
         text_color = DARK if ev.get("co") in LIGHT_EVENT_COLORS else WHITE
         d.rectangle([(ex0, ey0), (ex1, ey1)], fill=color)
 
-        title = _truncate(d, ev.get("txt", ""), f_event, ex1 - ex0 - 8)
-        d.text((ex0 + 4, ey0 + event_top_pad), title, font=f_event, fill=text_color)
+        asc, desc = f_event.getmetrics()
+        _draw_wrapped(
+            d, ev.get("txt", ""), f_event,
+            x=ex0 + 4, y=ey0 + event_top_pad,
+            max_w=ex1 - ex0 - 8,
+            max_h=ey1 - (ey0 + event_top_pad),
+            fill=text_color,
+            line_height=asc + desc,
+        )
 
 
 W_P, H_P = 480, 800
