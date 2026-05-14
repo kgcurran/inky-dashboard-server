@@ -32,7 +32,7 @@ W, H = 800, 480
 LEFT_W = 300
 HEADER_H = 96
 HOUR_PX = 32
-HOUR_COL_W = 36
+HOUR_COL_W = 22
 DAY_HEADER_H = 26
 ALLDAY_ROW_H = 16
 FRAME_BORDER = 2
@@ -152,13 +152,13 @@ def render(header, tasks, calendar, time_range):
     img = Image.new("RGB", (W, H), WHITE)
     d = ImageDraw.Draw(img)
 
-    f_day = _load(56, bold=True)
+    f_day = _load(72, bold=True)
     f_dow = _load(20, bold=True)
     f_my = _load(13)
     f_task = _load(12, bold=True)
     f_sub = _load(10)
     f_hd = _load(11, bold=True)
-    f_hour = _load(10)
+    f_hour = _load(14, bold=True)
     f_event = _load(12, bold=True)
 
     _draw_left(d, header, tasks, f_day, f_dow, f_my, f_task, f_sub)
@@ -174,8 +174,9 @@ def _draw_left(d, header, tasks, f_day, f_dow, f_my, f_task, f_sub):
     d.text((16, 18), day_text, font=f_day, fill=WHITE)
     day_w = d.textlength(day_text, font=f_day)
     meta_x = 16 + day_w + 12
-    d.text((meta_x, 26), header["w"], font=f_dow, fill=WHITE)
-    d.text((meta_x, 56), header["s"], font=f_my, fill=META)
+    meta_max_w = LEFT_W - meta_x - 8
+    d.text((meta_x, 26), _truncate(d, header["w"], f_dow, meta_max_w), font=f_dow, fill=WHITE)
+    d.text((meta_x, 56), _truncate(d, header["s"], f_my, meta_max_w), font=f_my, fill=META)
 
     y = HEADER_H + 4
     task_h = 42
@@ -345,7 +346,7 @@ def _draw_calendar(d, calendar, time_range, *, x0, y0, x1, y1,
 
 W_P, H_P = 480, 800
 DAY_HEADER_H_P = 36
-HOUR_COL_W_P = 40
+HOUR_COL_W_P = 26
 ALLDAY_ROW_H_P = 22
 
 
@@ -353,7 +354,7 @@ def render_portrait(calendar, time_range):
     img = Image.new("RGB", (W_P, H_P), WHITE)
     d = ImageDraw.Draw(img)
     f_hd = _load(14, bold=True)
-    f_hour = _load(12)
+    f_hour = _load(18, bold=True)
     f_event = _load(18, bold=True)
     _draw_calendar(
         d, calendar, time_range,
